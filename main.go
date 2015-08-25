@@ -11,7 +11,7 @@ import (
 )
 
 const Version = "0.1.0"
-const extension = ".tmpl"
+const extension = ".tpl"
 
 func usageAndExit(s string) {
 	fmt.Fprintf(os.Stderr, "!! %s\n", s)
@@ -26,25 +26,34 @@ func init() {
 }
 
 func main() {
+
 	args := os.Args[1:]
 	if len(args) == 0 {
 		usageAndExit("missing [template]")
 	}
 	input := args[0]
-	if input[len(input)-4:] != ".tpl" {
-		usageAndExit("[template] does not end with .tpl")
+
+	if input[len(input) - len(extension):] != extension {
+		usageAndExit("[template] does not end with " + extension)
 	}
+
+	info, err := os.Stat(input)
+	if err != nil {
+		usageAndExit(err.Error())
+	}
+
 	t, err := template.ParseFiles(input)
 	if err != nil {
 		usageAndExit(err.Error())
 	}
+
 	var b bytes.Buffer
 	err = t.Option("missingkey=zero").Execute(&b, getEnvironMap())
 	if err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)
 	}
-	ioutil.WriteFile(input[:len(input)-4], b.Bytes(), 0644)
+	ioutil.WriteFile(input[:len(input) - len(extension)], b.Bytes(), info.Mode())
 	os.Remove(input)
 }
 
