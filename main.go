@@ -10,12 +10,12 @@ import (
 	"text/template"
 )
 
-const Version = "0.1.0"
+const Version = "0.2.0"
 const extension = ".tpl"
 
 func usageAndExit(s string) {
 	fmt.Fprintf(os.Stderr, "!! %s\n", s)
-	fmt.Fprint(os.Stderr, "usage: envtpl [template]\n")
+	fmt.Fprint(os.Stderr, "usage: envtpl [template] <output>\n")
 	fmt.Fprintf(os.Stderr, "%s version: %s (%s on %s/%s; %s)\n", os.Args[0], Version, runtime.Version(), runtime.GOOS, runtime.GOARCH, runtime.Compiler)
 	os.Exit(1)
 }
@@ -26,7 +26,7 @@ func init() {
 }
 
 func main() {
-
+	//Process parameters
 	args := os.Args[1:]
 	if len(args) == 0 {
 		usageAndExit("missing [template]")
@@ -42,19 +42,27 @@ func main() {
 		usageAndExit(err.Error())
 	}
 
+	var output string
+	if len(args) < 2 {
+		output = input[:len(input) - len(extension)]
+	} else {
+		output = args[1]
+	}
+
+	//Read template file
 	t, err := template.ParseFiles(input)
 	if err != nil {
 		usageAndExit(err.Error())
 	}
-
+	//Apply template
 	var b bytes.Buffer
 	err = t.Option("missingkey=zero").Execute(&b, getEnvironMap())
 	if err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)
 	}
-	ioutil.WriteFile(input[:len(input) - len(extension)], b.Bytes(), info.Mode())
-	os.Remove(input)
+	
+	ioutil.WriteFile(output, b.Bytes(), info.Mode())
 }
 
 func getEnvironMap() map[string]string {
